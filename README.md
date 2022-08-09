@@ -29,6 +29,10 @@ This repo contains the following content:
 
 ### Remarks:
 
+Note that model Notebooks and Python `train.py` are not consistent. The `train.py` are more recently edited.
+
+Only the Notebooks have sample visualizations and Test set results.
+
 For VGG16:
 
 > Planning on retraining on HPC
