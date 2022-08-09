@@ -18,13 +18,13 @@ This repo contains the following content:
 
 > This folder contains the code for the VGG16 based CNN Baseline
 
-> Has both Python script and Notebook
+> Has both Python file and Notebook
 
 * `ViT_B16_224`
 
 > This folder contains the code for the Vision Transformer Baseline
 
-> Has both Python script and Notebook
+> Has both Python file and Notebook
 
 
 ### Remarks:
