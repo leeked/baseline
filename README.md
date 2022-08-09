@@ -1,6 +1,6 @@
 # Spatial-Reasoning
 
-## Work done by Kevin Lee (k.lee@nyu.edu)
+## Collection of work done by Kevin Lee (k.lee@nyu.edu)
 
 This repo contains the following content:
 
