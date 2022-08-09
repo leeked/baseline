@@ -25,3 +25,30 @@ This repo contains the following content:
 > This folder contains the code for the Vision Transformer Baseline
 
 > Has both Python script and Notebook
+
+
+### Remarks:
+
+For VGG16:
+
+> Planning on retraining on HPC
+
+>> Larger image size
+
+>> Larger batch size
+
+> Also some minor changes
+
+For ViT:
+
+> Needs investigation
+
+>> Does not seem to learn much
+
+>> Experiment with different learning rates
+
+>> Investigate model
+
+> Planning on retraining on HPC
+
+>> Larger batch size
