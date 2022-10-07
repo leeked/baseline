@@ -4,6 +4,12 @@
 
 This repo contains the following content:
 
+* `/NEW/`
+
+> Newly updated files for both VGG and ViT baselines.
+
+> Use this instead. Ignore old `/VGG16/` `/ViT_B16_224/` folders
+
 * `/groundTruth/`
 
 > Folder containing the Ground Truth JSON files
@@ -16,11 +22,15 @@ This repo contains the following content:
 
 * `/VGG16/`
 
+> IGNORE (OLD)
+
 > This folder contains the code for the VGG16 based CNN Baseline
 
 > Has both Python file and Notebook
 
 * `/ViT_B16_224/`
+
+> IGNORE (OLD)
 
 > This folder contains the code for the Vision Transformer Baseline
 
