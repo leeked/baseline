@@ -17,6 +17,27 @@ from timm import create_model
 Models
 
 """
+class VGGFeat(nn.Module):
+  def __init__(self):
+    super(VGGFeat, self).__init__()
+    self.model_ver = models.vgg16(weights="DEFAULT")
+    self.layers = list(self.model_ver.children())[:-1]
+    self.feat_extractor = nn.Sequential(*self.layers)
+
+    self.flatten = nn.Flatten()
+
+  def forward(self, input1, input2):
+    output1 = self.feat_extractor(input1)
+    output2 = self.feat_extractor(input2)
+    
+    """Concatenate the image pair"""
+    output = torch.cat((output1, output2), 1)
+    
+    """Flatten to send to FC layer"""
+    output = self.flatten(output)
+
+    return output
+
 class VGGNetwork(nn.Module):
   """
   VGG16 model using pretrained weights
@@ -41,9 +62,9 @@ class VGGNetwork(nn.Module):
   def __init__(self):
     super(VGGNetwork, self).__init__()
 
-    self.model_ver = models.vgg16(weights="DEFAULT")
-    self.layers = list(self.model_ver.children())[:-1]
-    self.feat_extractor = nn.Sequential(*self.layers)
+    #self.model_ver = models.vgg16(weights="DEFAULT")
+    #self.layers = list(self.model_ver.children())[:-1]
+    #self.feat_extractor = nn.Sequential(*self.layers)
     
     self.head = nn.Sequential(
       nn.Linear(50176, 8192),
@@ -62,89 +83,20 @@ class VGGNetwork(nn.Module):
       nn.Sigmoid()
     )
 
-    self.flatten = nn.Flatten()
-
-  def forward(self, input1, input2):
-    """
-    Runs Forward Pass
-
-    Parameters:
-    -----------
-    input1 : torch.Tensor
-      (batch_size, in_chans, img_size, img_size)
-    input2 : torch.Tensor
-      (batch_size, in_chans, img_size, img_size)
-    
-    Returns:
-    --------
-    output : torch.Tensor
-      (batch_size, prediction)
-    """
-    output1 = self.feat_extractor(input1)
-    output2 = self.feat_extractor(input2)
-    
-    """Concatenate the image pair"""
-    output = torch.cat((output1, output2), 1)
-    
-    """Flatten to send to FC layer"""
-    output = self.flatten(output)
-    
-    output = self.head(output)
+  def forward(self, input0):
+    output = self.head(input0)
 
     return output
 
-class ViTNetwork(nn.Module):
-  """
-  ViT model using pretrained weights
+#######################################################
 
-  Parameters:
-  -----------
-
-  Attributes:
-  -----------
-  model_name : string
-    Name of pretrained model to use
-  encoder : 
-    Pretrained ViT model
-  head : nn.Sequential
-    Regression prediction head.
-  """
-
+class ViTFeat(nn.Module):
   def __init__(self):
-    super(ViTNetwork, self).__init__()
-
+    super(ViTFeat, self).__init__()
     self.model_name = 'vit_base_patch16_224' # vit_base_patch16_224
     self.encoder = create_model(self.model_name, pretrained=True)
-    
-    self.head = nn.Sequential(
-        nn.Linear(1536, 384),
-        nn.BatchNorm1d(384),
-        nn.ReLU(inplace=True),
-        
-        nn.Linear(384, 96),
-        nn.BatchNorm1d(96),
-        nn.ReLU(inplace=True),
-
-        nn.Linear(96, 1),
-        nn.Sigmoid()
-    )
 
   def forward(self, input1, input2):
-    """
-    Runs Forward Pass
-
-    Parameters:
-    -----------
-    input1 : torch.Tensor
-      (batch_size, in_chans, img_size, img_size)
-    input2 : torch.Tensor
-      (batch_size, in_chans, img_size, img_size)
-    
-    Returns:
-    --------
-    output : torch.Tensor
-      (batch_size, prediction)
-    """
     batch_size = input1.shape[0]
 
     cls_token = self.encoder.cls_token.expand(batch_size, -1, -1)
@@ -176,7 +128,57 @@ class ViTNetwork(nn.Module):
     
     """Concatenate the image pair"""
     output = torch.cat((output1, output2), dim=1)
+
+    return output
+
+class ViTNetwork(nn.Module):
+  """
+  ViT model using pretrained weights
+
+  Parameters:
+  -----------
+
+  Attributes:
+  -----------
+  model_name : string
+    Name of pretrained model to use
+  encoder : 
+    Pretrained ViT model
+  head : nn.Sequential
+    Regression prediction head.
+  """
+
+  def __init__(self):
+    super(ViTNetwork, self).__init__()
+    self.head = nn.Sequential(
+        nn.Linear(1536, 384),
+        nn.BatchNorm1d(384),
+        nn.ReLU(inplace=True),
+        
+        nn.Linear(384, 96),
+        nn.BatchNorm1d(96),
+        nn.ReLU(inplace=True),
+
+        nn.Linear(96, 1),
+        nn.Sigmoid()
+    )
+
+  def forward(self, input0):
+    """
+    Runs Forward Pass
+
+    Parameters:
+    -----------
+    input1 : torch.Tensor
+      (batch_size, in_chans, img_size, img_size)
+    input2 : torch.Tensor
+      (batch_size, in_chans, img_size, img_size)
     
-    output = self.head(output)
+    Returns:
+    --------
+    output : torch.Tensor
+      (batch_size, prediction)
+    """
+    output = self.head(input0)
 
     return output

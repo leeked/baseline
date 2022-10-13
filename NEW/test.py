@@ -12,7 +12,7 @@ from tqdm import tqdm
 import os
 import argparse
 from utils import DEVICE, vis, cnnDataset
-from base_models import VGGNetwork, ViTNetwork
+from base_models import VGGNetwork, ViTNetwork, VGGFeat, ViTFeat
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--vgg', action="store_true")
@@ -20,7 +20,7 @@ parser.add_argument('--vit', action="store_true")
 parser.add_argument('--path', type=str)
 args = parser.parse_args()
 
-def test(model: VGGNetwork, test_dataloader: cnnDataset):
+def test(model, feat, test_dataloader: cnnDataset):
   loss_fn = nn.BCELoss()
 
   acc = []
@@ -28,10 +28,13 @@ def test(model: VGGNetwork, test_dataloader: cnnDataset):
 
   with torch.no_grad():
     model.eval()
+    feat.eval()
     for img0, img1, label in tqdm(test_dataloader, total=len(test_dataloader)):
       img0, img1, label = img0.to(DEVICE), img1.to(DEVICE), label.to(DEVICE)
 
-      output = model(img0, img1)
+      extracted = feat(img0, img1)
+
+      output = model(extracted)
 
       loss = loss_fn(output, label)
       test_loss.append(loss.item())
@@ -64,12 +67,16 @@ def main():
                       num_workers=2,
                       batch_size=16)
 
-  print("Initializing model...")
+  print("Initializing model(s)...")
   if args.vgg:
+    print("Model: VGG")
     model = VGGNetwork().to(DEVICE)
+    feat = VGGFeat().to(DEVICE)
     model.load_state_dict(torch.load(args.path + "vgg_model.pth"))
   if args.vit:
+    print("Model: ViT")
     model = ViTNetwork().to(DEVICE)
+    feat = ViTFeat().to(DEVICE)
     model.load_state_dict(torch.load(args.path + "vit_model.pth"))
   if not args.vgg and not args.vit:
     raise Exception("Need to specify model (vgg, vit)")
@@ -77,6 +84,7 @@ def main():
   print("Entering test...")
   acc, loss = test(
       model,
+      feat,
       test_dataloader,
   )
 

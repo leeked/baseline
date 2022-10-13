@@ -12,9 +12,10 @@ from tqdm import tqdm
 import os
 import argparse
 from utils import DEVICE, vis, cnnDataset
-from base_models import VGGNetwork, ViTNetwork
+from base_models import VGGNetwork, ViTNetwork, VGGFeat, ViTFeat
 
 parser = argparse.ArgumentParser()
+parser.add_argument('epochs', type=int, help="number of epochs to train")
 parser.add_argument('--vgg', action="store_true")
 parser.add_argument('--vit', action="store_true")
 parser.add_argument('--path', type=str)
@@ -25,7 +26,7 @@ args = parser.parse_args()
 Train
 
 """
-def train(model: VGGNetwork, pos: pd.DataFrame, neg: pd.DataFrame, training_dir: str, vdl: cnnDataset, num_epochs: int) -> dict:
+def train(model, feat, pos: pd.DataFrame, neg: pd.DataFrame, training_dir: str, vdl: cnnDataset, num_epochs: int) -> dict:
   optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
   loss_fn = nn.BCELoss()
 
@@ -54,6 +55,7 @@ def train(model: VGGNetwork, pos: pd.DataFrame, neg: pd.DataFrame, training_dir:
 
     """Training Loop"""
     model.train()
+    feat.eval()
     print(f"EPOCH: {epoch}")
     val_losses, train_losses = [], []
     for img0, img1,  label in tqdm(tdl, total=len(tdl)):
@@ -61,7 +63,9 @@ def train(model: VGGNetwork, pos: pd.DataFrame, neg: pd.DataFrame, training_dir:
 
       optimizer.zero_grad()
 
-      preds = model(img0, img1)
+      extracted = feat(img0, img1)
+
+      preds = model(extracted)
       loss = loss_fn(preds, label)
       loss.backward()
       train_losses.append(loss.detach().cpu().numpy())
@@ -70,10 +74,13 @@ def train(model: VGGNetwork, pos: pd.DataFrame, neg: pd.DataFrame, training_dir:
     """Validation Loop"""
     with torch.no_grad():
       model.eval()
+      feat.eval()
       for (img0, img1, label) in tqdm(vdl, total=len(vdl)):
         img0, img1, label = img0.to(DEVICE), img1.to(DEVICE), label.to(DEVICE)
 
-        preds = model(img0, img1)
+        extracted = feat(img0, img1)
+
+        preds = model(extracted)
         loss = loss_fn(preds, label)
         val_losses.append(loss.detach().cpu().numpy())
 
@@ -121,29 +128,35 @@ def main():
                           num_workers=2,
                           batch_size=16)
   
-  print("Initializing model...")
+  print("Initializing model(s)...")
   file_name = ""
   if args.vgg:
+    print("Model: VGG")
     model = VGGNetwork().to(DEVICE)
+    feat = VGGFeat().to(DEVICE)
     file_name = "vgg_model.pth"
   if args.vit:
+    print("Model: ViT")
     model = ViTNetwork().to(DEVICE)
+    feat = ViTFeat().to(DEVICE)
     file_name = "vit_model.pth"
   if not args.vgg and not args.vit:
     raise Exception("Need to specify model (vgg, vit)")
 
   print("Entering train...")
-  vgg_model = train(
+  print(f"Training for {args.epochs} epochs.")
+  res_model = train(
       model,
+      feat,
       pos,
       neg,
       training_dir,
       vdl,
-      num_epochs=30,
+      num_epochs=args.epochs,
   )
 
   print("Saving...")
-  torch.save(vgg_model, args.path + file_name)
+  torch.save(res_model, args.path + file_name)
 
 
 if __name__ == "__main__":
